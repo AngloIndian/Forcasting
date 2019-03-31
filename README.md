@@ -2,7 +2,7 @@
 Forcasting and Analytics SMU
 
 
-#Folder Structure
+# Folder Structure
 
 1. Data: Input data 
 2. Base_learner: Containing running script for level one algo 
