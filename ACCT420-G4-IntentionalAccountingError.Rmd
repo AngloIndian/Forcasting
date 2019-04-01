@@ -1,0 +1,186 @@
+---
+title: "<center> ACCT420-G4-IntentionalAccountingError </center>"
+author: <center> Adrian Kevin Wijono - G1029244T </center>  <center> Jordan Steve - </center>  <center> Lam - </center>  <center> Ong Wei Bin - </center>  <center> Tung -  </center>  <center> <h4> Prepared for Prof. Wang Jiwei </h4> </center>  <center> <h4> Submitted on 8 April 2019 </h4> </center>   
+output:
+  html_document:
+    theme: paper
+    df_print: paged
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    self_contained: no
+---
+
+<center> ![](http://diysolarpanelsv.com/images/smu-logo-clipart-33.png){width=1000px} </center>
+
+# **Introduction**
+
+In the accounting field, an error in a submitted firm's annual report can be classified under accounting error (wrong figure stated due to miscalculation on the firm's part). Unfortunately, this error can be both intentional or not. This project covers our chosen machine learning model to better predict intentional accounting errors, also known as Accounting Fraud. 
+
+The outcome variable is a binary classification, with existing labels on the training data provided in the project brief. This classifies this project under a supervised learning project. 
+
+Train and test data are provided, split by timestamp (train 2005-2009, test 2010) with the binary outcome variable omitted from the test data. As the data does not have any financial information, we extracted data from the CRSP/COMPUSTAT MERGED database from WRDS to build our model. These variables are either used as they are, or further processed into more useful measures such as %growth or ratios as inputs to the model.
+
+Exploratory Data Analysis was also done to see the distribution of the output/outcome variable ("Restate_Int") by company, year, month and quarter to try and identify patterns to the occurence. It is apparent that the frequency of such accounting frauds are extremely rare and there isn't any noticeable pattern/trend. 
+
+For the modelling, we utilized <**INSERT METHODS @TUNG**>
+
+# **Variable Selection**
+
+In this section, we queried data from the WRDS database (CRSP-COMPUSTAT MERGED) to extract relevant financial as well as non-financial variables as X-variables. The next section wil outline the selected variables in detail and the reason for selecting these variables. 
+
+# **Exploratory Data Analysis**
+
+Before we proceed to the model training, we have to see the general distribution of our y-variable (Restate_Int) with respect to certain key criteria such as Company Code, certain time series, as well as X-Values.
+
+## **Missing Data Points**
+
+This section will look at the ways we deal with missing data in the dataset. We will look at both missing data in the label (Y-Variable) as well as X-Variables.
+
+### **Missing Y-Variables (Restate_Int)**
+
+```{r include=FALSE}
+library(dplyr)
+df = read.csv("Restate_int_train.csv", stringsAsFactors = F)
+#check the structure
+str(df)
+#change gvkey, year, restate to a factor
+df$gvkey = as.factor(df$gvkey)
+df$year = as.factor(df$year)
+df$Restate_Int = as.factor(df$Restate_Int)
+percent_intent = summary((df$Restate_Int))[2] / (summary((df$Restate_Int))[1] + 
+summary((df$Restate_Int))[2]) * 100 
+```
+
+```{r echo=FALSE}
+summary(df)
+```
+
+Generally, looking at the summary of the data, we can conclude that there is a low occurence of intentional accounting errors. There are in total **`r percent_intent`%** of datapoints that classifies as an intentional error (Restate_Int = 1).  
+
+```{r, include=F}
+library(ggplot2)
+library(scales)
+library(gridExtra)
+```
+
+```{r, fig.height = 10, fig.width = 12, echo=F}
+#creation of important variables
+#month
+df = mutate(df, month = ifelse(substr(df$Date,2,2) == "/", substr(df$Date,1,1), substr(df$Date,1,2)))
+df$month = as.integer(df$month)
+df$month = as.factor(df$month)
+#quarter
+df = mutate(df, quarter = 
+        ifelse(month == 1 | month == 2 | month == 3, 1,
+        ifelse(month == 4 | month == 5 | month == 6, 2,
+        ifelse(month == 7 | month == 8 | month == 9, 3, 4))))
+df$quarter = as.integer(df$quarter)
+df$quarter = as.factor(df$quarter)
+#by company
+df2 = head(df, 250)
+ggplot(data = df2, aes(x = df2$gvkey)) +
+labs(title = "Distribution of Intentional Error by Company",
+     x = "Company Code", 
+     y = "Frequency") + 
+geom_bar(aes(fill = df2$Restate_Int), width = 0.35) +
+scale_fill_discrete(name = "Intentional Error?",
+labels = c("Not Intentional","Intentional")) + 
+theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20)) + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+To better visualize the distribution, taking only top 250 data points, based on the plot above, there are lots of companies with no intentional error (red bars) at all. Using the full dataset, only **`r 100 - (313/4237*100)`%** of the data consist of misstatements, further proving that this occurrence is very rare. 
+
+In addition to that, there is also a lot of companies with incomplete data (out of the 5 years, only have 1 year). This could be due to bankruptcy/delisting, recent IPO or just missing during data collection. 
+
+To combat the latter, given that we are going to merge this dataset with the variables from CRSP/COMPUSTAT-MERGED datafile, we are going to do an outer join to take in those missing Restate_Int values. 
+
+Moreover, given its rare occurrence, we are going to assume a default value of 0 (no misstatement) for these missing labels (y-values). Although this will result in an underestimation of the true positive (labelling actual misstatement as non-misstatement), we have more training dataset volume **<AMEND THIS(from r nrow to r nrow)>**, which facilitates better model learning.  
+
+### **Missing X-Values**
+
+Aside from missing Restate_Int values, there are also possible missing values in our selected X-Values. This could be because the figure is not a mandatory reporting requirement or the figure is not applicable in the context of the company. 
+
+**<identify missing values in X>**
+
+## **Distribution of Misstatements**
+```{r, fig.height = 10, fig.width=12, echo = F,}
+#identify companies with intentional error
+df1 = read.csv("Restate_int_train.csv", stringsAsFactors = F)
+df1 = df1 %>%
+  group_by(gvkey) %>%
+  mutate(Total = sum(Restate_Int)) %>%
+  subset(Total != 0) %>%
+  ungroup()
+df1$gvkey = as.factor(df1$gvkey)
+df1$Restate_Int = as.factor(df1$Restate_Int)
+#month
+df1 = mutate(df1, month = ifelse(substr(df1$Date,2,2) == "/", substr(df1$Date,1,1), substr(df1$Date,1,2)))
+df1$month = as.integer(df1$month)
+df1$month = as.factor(df1$month)
+#quarter
+df1 = mutate(df1, quarter = 
+        ifelse(month == 1 | month == 2 | month == 3, 1,
+        ifelse(month == 4 | month == 5 | month == 6, 2,
+        ifelse(month == 7 | month == 8 | month == 9, 3, 4))))
+df1$quarter = as.integer(df1$quarter)
+df1$quarter = as.factor(df1$quarter)
+df1 = head(df1, 250)
+p1 = ggplot(data = df1, aes(x = df1$gvkey)) +
+labs(title = "Distribution of Intentional Error by Company (at least 1 error)",
+     x = "Company Code", 
+     y = "Frequency") + 
+geom_bar(aes(fill = Restate_Int), width = 0.35) +
+scale_fill_discrete(name = "Intentional Error?",
+labels = c("Not Intentional","Intentional")) + 
+theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 20)) + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p1
+```
+To better visualize the distribution of misstatements, we took away all firms with 0 misstatements, and took the first 250 data points. Based on the above plot, we can see that among those with misstatements, Most of them only have 1 misstatement. It further proves that the occurrence is rare, although there are extremes values with 5 misstatements in 5 years. But we can still say that generally, the occurence is fairly rare.
+
+```{r, fig.height=20, fig.width=12, echo = F}
+#by year
+p2=ggplot(data = df1, aes(x = df1$year)) +
+scale_y_continuous(labels = percent) +
+labs(title = "Distribution of Intentional Error by Year",
+     x = "Year", 
+     y = "Frequency") + 
+geom_bar(aes(fill = df1$Restate_Int), width = 0.35, position = "fill") +
+scale_fill_discrete(name = "Intentional Error?",
+labels = c("Not Intentional","Intentional")) + 
+theme(plot.title = element_text(hjust = 0.5))
+#see by month
+p3 = ggplot(data = df1, aes(x = df1$month)) +
+scale_y_continuous(labels = percent) +
+labs(title = "Distribution of Intentional Error by Month",
+     x = "Month", 
+     y = "Frequency") + 
+geom_bar(aes(fill = df1$Restate_Int), width = 0.35, position = "fill") +
+scale_fill_discrete(name = "Intentional Error?",
+labels = c("Not Intentional","Intentional")) + 
+theme(plot.title = element_text(hjust = 0.5))
+#see by quarter
+p4 = ggplot(data = df1, aes(x = df1$quarter)) +
+scale_y_continuous(labels = percent) +
+labs(title = "Distribution of Intentional Error by Quarter",
+     x = "Quarter", 
+     y = "Frequency") + 
+geom_bar(aes(fill = df1$Restate_Int), width = 0.35, position = "fill") +
+scale_fill_discrete(name = "Intentional Error?",
+labels = c("Not Intentional","Intentional")) + 
+theme(plot.title = element_text(hjust = 0.5))
+grid.arrange(p2,p3,p4,nrow = 3)
+```
+Looking at the same dataset after filtering out those with no misstatements, we also look at the distribution of misstatements on different timeframes (Year, Month and Quarter). 
+
+When plotted against year, there isn't any clear trend over the 5 years. Against month, there also isn't any clear trend, we can only say there is generally a spike on quarter start and end. And lastly, against quarter, there's no trend but we can see that most misstatements happen in quarter 2. 
+
+# **Modeling Methods and Algorithms**
+
+# **Results**
+
+# **References**
+http://www.theforensicauditor.com/2017/10/02/financial-statement-fraud/  
+https://books.google.com.sg/books?id=S6Y2DwAAQBAJ&printsec=frontcover#v=onepage&q&f=false
+
