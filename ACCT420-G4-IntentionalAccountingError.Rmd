@@ -345,7 +345,7 @@ Cash flows may be inflated to improve a company’s reported performance. Compan
 +---------------+--------------------------------------------------------------------+
 | Variable Name | Accounting Name                                                    |
 +:=============:+:==================================================================:+
-| bkvlps        | Cash Dividends (Cash Flow)                                         |
+| bkvlps        | Book Value Per Share                                      |
 +---------------+--------------------------------------------------------------------+
 | epsfi         | Earnings Per Share (Diluted) Including Extraordinary Items         |
 +---------------+--------------------------------------------------------------------+
@@ -353,6 +353,8 @@ Cash flows may be inflated to improve a company’s reported performance. Compan
 +---------------+--------------------------------------------------------------------+
 | epsfi         | Options Exercisable                                                |
 +---------------+--------------------------------------------------------------------+
+
+Shares represent how profitable a company is. As a company becomes more profitable, then shares price as well as the payout will usually be high as well. Of course, companies will try to offer high shares earnings so as to prove that they are profitable and worth investing in.
 
 ### Dividends
 
@@ -369,6 +371,8 @@ Cash flows may be inflated to improve a company’s reported performance. Compan
 +---------------+----------------------------------------+
 | dvpsx_f       | Dividends Per Share - Ex-Date - Fiscal |
 +---------------+----------------------------------------+
+
+Similar to shares, dividends are payouts to shareholders, and is a good representative of how well a company is doing.
 
 ### Others
 
