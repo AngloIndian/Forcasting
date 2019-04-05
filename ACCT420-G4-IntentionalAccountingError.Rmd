@@ -390,7 +390,7 @@ Companies that have more negative auditors’ opinions may be more likely to be 
 
 ## Percentage Growth Rate
 
-Year-on-year percentage growth rates were calculated for the following variables, given their likelihood of being manipulated, whether directly or indirectly: am  (Amortization of Intangibles), dp (Depreciation and Amortization), invt (Inventories - Total), gp (Gross Profit (Loss)), recd (Receivables - Estimated Doubtful), rect (Receivables Total), revt  (Revenue - Total) and ni/at (Return on Assets). These growth rates will enable any suspicious fluctuations in the values of these variables to be identified.
+Year-on-year percentage growth rates were calculated for the following variables, given their likelihood of being manipulated, whether directly or indirectly: am  (Amortization of Intangibles), dp (Depreciation and Amortization), invt (Inventories - Total), gp (Gross Profit (Loss)), rect (Receivables Total), revt  (Revenue - Total) and ni/at (Return on Assets). These growth rates will enable any suspicious fluctuations in the values of these variables to be identified.
 
 ## Ratios
 
@@ -483,16 +483,6 @@ These ratios analyze the amount of accrual accounting used by a company. Accrual
 +----------------------------+-------------+-------------+
 
 As mentioned above, improper revenue recognition is one of the most common vehicles for financial reporting fraud. However, instead of overstating revenue, companies sometimes want to delay revenue recognition and utilise “cookie jar” accounting. The company may recognise unearned income in profitable years and realize its unearned income in less profitable years. Hence, a high value for this ratio may be indicative of “cookie jar” accounting.
-
-#### Provision for Doubtful Debts to Revenue
-
-+-----------------------------------------+-------------+----------------------+
-| Ratio Name                              | Ratio Code  | Formula              |
-+:=======================================:+:===========:+:====================:+
-| Provision for Doubtful Debts to Revenue | r_recd_revt | $$recd/revt$$        |
-+-----------------------------------------+-------------+----------------------+
-
-As discussed above under 2.1.1.3, provision for doubtful debts can be manipulated to manipulate both the book value of receivables and the bad debt expense. An unusually low value for this ratio may indicate that such manipulation is occurring.
 
 # Exploratory Data Analysis
 
