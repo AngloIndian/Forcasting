@@ -20,11 +20,15 @@ In the accounting field, an error in a submitted firm's annual report can be cla
 
 The outcome variable is a binary classification, with existing labels on the training data provided in the project brief. This classifies this project under a supervised learning project. 
 
-Train and test data are provided, split by timestamp (train 2005-2009, test 2010) with the binary outcome variable omitted from the test data. As the data does not have any financial information, we extracted data from the CRSP/COMPUSTAT MERGED database from WRDS to build our model. These variables are either used as they are, or further processed into more useful measures such as %growth or ratios as inputs to the model.
+Train and test data are provided, split by timestamp (train 2005-2009, test 2010) with the binary outcome variable omitted from the test data. As the data does not have any financial information, we extracted data from the CRSP/COMPUSTAT MERGED database from WRDS to build our model. These variables are either used as they are, or further processed into more useful measures such as ratios as inputs to the model.
 
-Exploratory Data Analysis was also done to see the distribution of the output/outcome variable ("Restate_Int") by company, year, month and quarter to try and identify patterns to the occurence. It is apparent that the frequency of such accounting frauds are extremely rare and there isn't any noticeable pattern/trend. 
+An external research paper is also used as a reference for the variable selection. We ultimately chose 15 variables to be included in the models
 
-For the modelling, we utilized <**INSERT METHODS @TUNG**>
+Exploratory Data Analysis was also done to see the distribution of the output/outcome variable ("Restate_Int") by company, year, month and quarter to try and identify patterns to the occurence. It is apparent that the frequency of such accounting frauds are extremely rare and there isn't any noticeable pattern/trend. We also cleaned the data to control missing data and outlier effect as well as correlation factors. 
+
+For the modelling, we utilized several different models and compared their out-of-sample AUC. We used Logistics Regression,Glmnet (LASSO, Ridge and Elastic Net), Gradient Boosting, Random Forest and a simple Neural Network. For some of the models, we proceeded to tune some parameters and cross validate them, before doing some post-processing logic to improve upon the initial model. 
+
+We also tried to use an ensemble method utilizing the predictions from each of the aforementioned models. There will also be a discussion component where we discuss our chosen model and the practical significance of using them. 
 
 # Variable Selection
 
@@ -112,11 +116,11 @@ The cost of goods sold may be understated if methods like inventory overstatemen
 
 #### Amortization and Depreciation
 
-+---------------+-------------------------------------------------------------+
-| Variable Name | Accounting Name                                             |
-+:=============:+:===========================================================:+
-| dp            | Comprehensive Income - Total                                |
-+---------------+-------------------------------------------------------------+
++---------------+----------------------+
+| Variable Name | Accounting Name      |
++:=============:+:====================:+
+| dp            | Depreciation - Total |
++---------------+----------------------+
 
 Amortization and depreciation may be manipulated by adjusting the useful lives of assets, resulting in a reduction in expense. 
 
@@ -170,11 +174,7 @@ Significant decrease in Leverage Index can be connected with understatement of l
 
 Before we proceed to the model training, we have to see the general distribution of our y-variable (Restate_Int) with respect to certain key criteria such as Company Code, certain time series, as well as X-Values.
 
-## Missing Data Points
-
-This section will look at the ways we deal with missing data in the dataset. We will look at both missing data in the label (Y-Variable) as well as X-Variables.
-
-### Missing Y-Variables (Restate_Int)
+## Distribution of Misstatements
 
 ```{r include=FALSE}
 library(dplyr)
@@ -230,19 +230,7 @@ To better visualize the distribution, taking only top 250 data points, based on 
 
 In addition to that, there is also a lot of companies with incomplete data (out of the 5 years, only have 1 year). This could be due to bankruptcy/delisting, recent IPO or just missing during data collection. 
 
-To combat the latter, given that we are going to merge this dataset with the variables from CRSP/COMPUSTAT-MERGED datafile, we are going to do an outer join to take in those missing Restate_Int values. 
-
-Moreover, given its rare occurrence, we are going to assume a default value of 0 (no misstatement) for these missing labels (y-values). Although this will result in an underestimation of the true positive (labelling actual misstatement as non-misstatement), we have more training dataset volume **<AMEND THIS(from r nrow to r nrow)>**, which facilitates better model learning.  
-
-### Missing X-Values
-
-Aside from missing Restate_Int values, there are also possible missing values in our selected X-Values. This could be because the figure is not a mandatory reporting requirement or the figure is not applicable in the context of the company. 
-
-We started by identifying variables with >= 15% missing values
-
-**<identify missing values in X>**
-
-## Distribution of Misstatements
+## Time Series Distribution of Misstatements
 ```{r, fig.height = 10, fig.width=12, echo = F,}
 #identify companies with intentional error
 df1 = read.csv("Restate_int_train.csv", stringsAsFactors = F)
@@ -312,9 +300,146 @@ grid.arrange(p2,p3,p4,nrow = 3)
 ```
 Looking at the same dataset after filtering out those with no misstatements, we also look at the distribution of misstatements on different timeframes (Year, Month and Quarter). 
 
-When plotted against year, there isn't any clear trend over the 5 years. Against month, there also isn't any clear trend, we can only say there is generally a spike on quarter start and end. And lastly, against quarter, there's no trend but we can see that most misstatements happen in quarter 2. 
+When plotted against year, there isn't any clear trend over the 5 years. Against month, there also isn't any clear trend, we can only say there is generally a spike on quarter start and end. And lastly, against quarter, there's no trend but we can see that most misstatements happen in quarter 2. We can therefore conclude that time series analysis might not add a lot of value in the analysis.
+
+## Missing Data Analysis
+
+```{r, include = F}
+#load datasets
+data = read.csv("wrds.csv")
+train = df[,c(1,2,5)]
+test = read.csv("Restate_int_test.csv")
+
+#take only the ones in variables selection 
+data = data[,c('GVKEY','fyear','act','bkvlps','cogs','dltt','dp','dv','ebit','gdwl','ppent','revt','xlr')]
+
+#rename columns and make variable year for merging
+colnames(data)[1] = "gvkey"
+colnames(data)[2] = "year"
+```
+
+```{r, include = F}
+library(dplyr)
+#outer join to create a training file
+dftrain = merge(x = train, y = data, by = c('gvkey','year'), all.x = TRUE)
+dftrain = mutate(dftrain, leverage_index = dltt/act, depre_index = dp/(dp+ppent), saleadmin_index = xlr/revt)[,-2]
+#left join to create test file
+dftest = left_join(test, data, by = c("gvkey","year"))[,c(-3,-4)]
+dftest = mutate(dftest, leverage_index = dltt/act, depre_index = dp/(dp+ppent), saleadmin_index = xlr/revt)[,-2]
+```
+
+### Missing X variables
+
+```{r}
+apply(dftrain,2,function(x){sum(is.na(x))/length(x)*100})
+```
+Based on the percentage of missing data, most of the variables have decent level of missing data of around 15%. We then proceed to impute these values with 0, under the assumption that the data was not submitted because it does not exist.
+
+## Correlation Analysis
+
+```{r}
+dfcorr = dftrain[,c(-1,-2,-3)]
+cor(dfcorr)
+```
+Looking at the correlation matrix, a lot of the variables are quite heavily correlated, showing the prevalence of multi-collinearity. We are going to combat this by tuning and cross-validating our models, as well as utilizing bagging and boosting methods to reduce the overfitting effect of the multi-collinearity.
 
 # Modeling Methods and Algorithms
+
+## Logistic Regression
+```{r, fig.height=20, fig.width=12, echo = F}
+fit <- glm(Restate_int ~ ., data = df.train, family = binomial)
+logodds <- predict(fit, df.test, type = "response")
+```
+Using a logistic regression model, data of the 15 identified features mentioned above was fed into the model, with a resulting out-of-sample AUC of 0.62484.
+
+This model result was further processed (post-processing) to improve the results of out-of-sample.
+
+### Post-processing of Logistics Regression
+```{r, fig.height=20, fig.width=12, echo = F}
+Restate_List = unique(subset(df.train, df.train$Restate_int == 1)[,1])
+post_processing = function(x){
+  ifelse(x %in% Restate_List,0.6,0)}
+
+test1['boosting'] = lapply(test1['gvkey'],post_processing)
+test1['Restate_Int'] = test1['Restate_Int'] + test1['boosting']
+test1$Restate_Int = ifelse(test1$Restate_Int > 1,1,test1$Restate_Int)
+test1 = test1[,c(1,2)]
+```
+One thing to take note from our training data is that we remove the `gvkey` and `fyear` column. Therefore, little information about the compare and time series factor is carried out into our model. 
+
+Hence, we would like to perform some post-processing to incorporate more time-series related information into our prediction
+
+From the business perspective, our group hypothesize that company that have major Accounting Error in the previous year are likely to have accounting error in the future. Specifically in this data, we observe that 2010 is right during recession period, hence company that previously have intentional accounting error (indication of weak company performance), is likely to have accounting mistatement again. Therefore, for those companies, we will boost the probability by 0.6 and cap at 1. The reason of choosing `0.6` is purely by trial and error but we also think that it should not influence too much on the probability
+
+After running the post-processing code above, the AUC score improved to **0.68785**
+
+## GLMNET
+
+We also tried a more advanced version of logistics regression using the Glmnet package. Glmnet is a package that fits a generalized linear model via penalized maximum likelihood. We tried 3 methods under this, Ridge, LASSO and Elastic Net, which differs in the way the penalties are assigned. 
+
+Generally they follow the same initial code:
+```{r}
+nonzero = function(x){ifelse(x < 0, 0,x)}
+dftrain = as.data.frame(apply(dftrain,2,nonzero))
+dftest = as.data.frame(apply(dftest,2,nonzero))[,-1]
+library(glmnet)
+library(coefplot)
+Lasso_eq = as.formula(paste("Restate_Int ~ act + bkvlps + cogs + dltt + dp + dv + ebit + gdwl + ppent + revt + xlr + leverage_index + depre_index + saleadmin_index", collapse = ""))
+x <- model.matrix(Lasso_eq, data=dftrain)[,-1] # [,-1] to remove intercept
+y <- model.frame(Lasso_eq, data=dftrain)[,"Restate_Int"]
+newX <- model.matrix(~., data=dftest) [,-1] #to remove intercept
+```
+Afterwards, the code for Ridge is as follows:
+```{r}
+cvfit = cv.glmnet(x=x, y=y,family = "binomial", type.measure="auc", alpha = 0)
+plot(cvfit)
+pred <- predict(cvfit, newx = newX, type="response", s = cvfit$lambda.min)
+```
+
+The code for LASSO is as follows:
+```{r}
+cvfit = cv.glmnet(x=x, y=y,family = "binomial", type.measure="auc", alpha = 1)
+plot(cvfit)
+pred <- predict(cvfit, newx = newX, type="response", s = cvfit$lambda.min)
+```
+
+The code for Elastic Net is as follows:
+```{r}
+set.seed(90298) #for reproducibility
+a <- seq(0.1, 0.9, 0.05)
+search <- foreach(i = a, .combine = rbind) %dopar% {
+  cv <- cv.glmnet(x=x, y=y, family = "binomial", nfold = 10, type.measure = "auc", paralle = TRUE, alpha = i)
+  data.frame(cvm = cv$cvm[cv$lambda == cv$lambda.1se], lambda.1se = cv$lambda.1se, alpha = i)
+}
+cv3 <- search[search$cvm == min(search$cvm), ]
+cvfit = cv.glmnet(x=x, y=y,family = "binomial", type.measure="auc", alpha = cv3$alpha)
+plot(cvfit)
+pred <- predict(cvfit, newx = newX, type="response", s = cvfit$lambda.min)
+```
+
+In order to get the prediction values, we used the minimum lambda as our choice of lambda.
+
+### Results of Glmnet
+
+Comparing the 3 methods, we found the Out-of-sample AUC scores as follows:
+
++-------------+-------------------+
+| Method      | Out-of-sample AUC |
+:+===========:+:=================:+
+| Ridge	      | 0.59481		  |
++-------------+-------------------+
+| LASSO       | 0.60344		  |
++-------------+-------------------+
+| Elastic Net | 0.60349           |
++-------------+-------------------+
+
+Based on the above, we can conclude that out of the 3 glmnet methods, Elastic Net gives the best out-of-sample AUC score.
+
+### Post-processing
+
+Similarly to previous models, we did post processing on the best model (Elastic Net) as outlined previously to improve the model.
+
+The results then improved as the Out-of-sample AUC improved to **0.67173**
 
 ## lightbgm
 
@@ -330,11 +455,9 @@ Below are the shor ilustration on the differences between the leaf-wise and leve
 
 [Insert level-wise tree growing]
 
-
 Since Python is better in memory management ( especially in growing multiple tree at the same time), we decided to write our code in python 
 
-
-```
+```{python}
 #get number of feature and number of training rows
 X_train = train
 X_test = test
@@ -401,26 +524,24 @@ for n_fold, (trn_idx, val_idx) in enumerate(folds.split(X_train,y)):
     feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
 ```
 
-## Hyperperameter tuning:
-Since tree based boosting method is very prone to overfitting, we would like to perform some hyperperameter tuning. There are many popular method for hyperperamter tuning :
+### Hyperparameter tuning:
+Since tree based boosting method is very prone to overfitting, we would like to perform some hyperperameter tuning. There are many popular method for hyperparameter tuning :
 
 - Random search
 - Grid Search
 - Bayesian Optimization
 
-For exploration purposes, we tried out Bayesian Optimization with the help of `bayes_opt` python library. From the oficial github page, it was written that 
+For exploration purposes, we tried out Bayesian Optimization with the help of `bayes_opt` python library. From the official github page, it was written that 
 
-```
 This is a constrained global optimization package built upon bayesian inference and gaussian process, that attempts to find the maximum value of an unknown function in as few iterations as possible. This technique is particularly suited for optimization of high cost functions, situations where the balance between exploration and exploitation is important.
-```
 
-The way bayesian optimzation works is that it construct a posterior distribution of function (gausian process ) that best describe the function that we want to optimize. In this case we want to optimize the hyperperameter to get the highest ROC AUC score. As the number of observation grow, the algorithm become more certain which region that are worth exploring and which are not, as seen in the picture below.
+The way bayesian optimization works is that it construct a posterior distribution of function (gausian process) that best describe the function that we want to optimize. In this case we want to optimize the hyperparameter to get the highest ROC AUC score. As the number of observation grow, the algorithm become more certain which region that are worth exploring and which are not, as seen in the picture below.
 
-The visual ilustration is given below:
+The visual illustration is given below:
 [Insert the picture below ]
 
 Below is the python code for our tuning process 
-```
+```{python}
 X = train
 def bayes_parameter_opt_lgb(X, y, init_round=15, opt_round=25, n_folds=10, random_seed=6, n_estimators=50000, learning_rate=0.001, output_process=False):
     # prepare data
@@ -474,12 +595,11 @@ def bayes_parameter_opt_lgb(X, y, init_round=15, opt_round=25, n_folds=10, rando
 print('Performing Bayesian Optimization')
 opt_params = bayes_parameter_opt_lgb(X, y, init_round=5, opt_round=20, n_folds=10,
 									 random_seed=6, n_estimators=50000, learning_rate=0.05)
-
 ```
-## Tuning Result
+### Tuning Result
 Below are the result of our report 
 
-```
+```{Python}
 Performing Bayesian Optimization
 |   iter    |  target   | baggin... | featur... | lambda_l1 | lambda_l2 | max_depth | min_ch... | min_sp... | num_le... |
 -------------------------------------------------------------------------------------------------------------------------
@@ -511,43 +631,18 @@ Performing Bayesian Optimization
 =========================================================================================================================
 ```
 
-From this,we can find out the best paramter is of such 
+From this,we can find out the best parameter is of such 
 ```
 {'target': 0.6246018240462684, 'params': {'bagging_fraction': 0.9453921853224881, 'feature_fraction': 0.8758724811791585, 'lambda_l1': 4.715776837697188, 'lambda_l2': 2.7571325217441576, 'max_depth': 6.142352664871275, 'min_child_weight': 5.335296245530968, 'min_split_gain': 0.029474362387896753, 'num_leaves': 10.765327234377471}}
 ```
 
-## Lightgbm result 
+### Lightgbm result 
 
-From the feature important plot, we can see that most of the loss comes from `bkvlps'` . It shows that (CAN SOMEONE HELP ME WITH THIS PART)
+From the feature importance plot, we can see that most of the loss comes from `bkvlps'` . It shows that **(CAN SOMEONE HELP ME WITH THIS PART)**
 
-The cross validation score of the model is `CV score: 0.63151` 
-## Logistic Regression
-```{r, fig.height=20, fig.width=12, echo = F}
-fit <- glm(Restate_int ~ ., data = df.train, family = binomial)
-logodds <- predict(fit, df.test, type = "response")
+The cross validation AUC score of the model is **0.63151** 
 
-test1 <- cbind(df.test, logodds)
-test1 = test1[,c(1,16)]
-colnames(test1)[2] = "Restate_Int"
-write.csv(test1, "logistcs.csv", row.names = F)
-```
-Using a logistic regression model, data of the 15 identified features mentioned above was fed into the model, with a resulting out-of-sample AUC of 0.62484.
-
-This model result was further processed (post-processing) to improve the results of out-of-sample.
-
-```{r, fig.height=20, fig.width=12, echo = F}
-Restate_List = unique(subset(df.train, df.train$Restate_int == 1)[,1])
-post_processing = function(x){
-  ifelse(x %in% Restate_List,0.6,0)}
-
-test1['boosting'] = lapply(test1['gvkey'],post_processing)
-test1['Restate_Int'] = test1['Restate_Int'] + test1['boosting']
-test1$Restate_Int = ifelse(test1$Restate_Int > 1,1,test1$Restate_Int)
-test1 = test1[,c(1,2)]
-write.csv(test1, "log-post.csv", row.names=FALSE)
-```
-
-## Neural Network
+## Simple Neural Network
 
 With the goal of `fast protyping, fast failing` mindset, our group also try a simple Neural Network. Our group use Keras API with Tensorflow backend over Pytorch. Although both framework are excellent for production grade  modelling, we decided to go with Keras because of its simple, easy to use API with less modification from the boiler plate code base
 
@@ -584,10 +679,10 @@ dense_31 (Dense)             (None, 1)                 151
 
 The model architecture is very basic. We did a batch normalization after the first Dense group with a hope to stay away from the Vanishing Gradient pitfall. We also use a `drop out` rate of 0.2 with a hope to avoid overfitting too much since we are using 2000 `epochs` to train our model.
 
-Our group feel that we have too little data to play with, hence, we use `epoch = 2000` with a hope that model can pick up more meaningful features . We also use large `batch_size` to make the training faster and also to minimize the problem of noisy data when using small epoch
+Our group feel that we have too little data to play with, hence, we use `epoch = 2000` with a hope that model can pick up more meaningful features . We also use large `batch_size` to make the training faster and also to minimize the problem of noisy data when using small `epoch`
 
 Below are our code to run the model 
-```
+```{Python}
 def auc(y_true, y_pred):
     auc = tf.metrics.auc(y_true, y_pred)[1]
     K.get_session().run(tf.local_variables_initializer())
@@ -641,37 +736,46 @@ history = model_nn.fit(X_train, y_train, validation_data = (X_test,y_test),epoch
 target_pred_nn = model_nn.predict(test)
 print('\n Validation Max score : {}'.format(np.max(history.history['val_auc'])))
 ``` 
+### Results
+**<Please paste your result here>**
 
-# Results
-<Please paste your result here>
+### Post processing
 
-## Post processing
-
-One thing to take note from our training data is that we remove the `gvkey` and `fyear` column. Therefore, little information about the compare and time series factor is carried out into our model. 
-
-Hence, we would like to perform some post-processing to incorporate more time-series related information into our prediction
-
-From the business perspective, our group hypothesize that company that have major Accounting Error in the previous year are likely to have accounting error in the future. Specifically in this data, we observe that 2010 is right during recession period, hence company that previously have intentional accounting error (indication of weak company performance), is likely to have accounting mistatement again. Therefore, for those companies, we will boost the probability by 0.6 and cap at 1. The reason of choosing `0.6` is purely by trial and error but we also think that it should not influence too much on the probability
+Similar to other models, we did a post processing technique as previously outlined. 
 
 with post processing inplace , our score improve drastically for most of our models :
 
-<INSERT THE SCORE OF THE MODEL HERE-----BEFORE VS AFTER POST PROCESSING>
+**<INSERT THE SCORE OF THE MODEL HERE-----BEFORE VS AFTER POST PROCESSING>**	
+	
+## Discussion
 
-# Discussion
+There are a few factors that we want to discuss in choosing our final model: metric performance, complexity , model explainability and interpretability. To enable easier comparison, the summary of results table after post-processing are given below:
 
-There are a few factors that we want to discuss in choosing our final model: metric performance, complexity , model explainability and interpretability 
++-----------------------+-------------------+
+| Method                | Out-of-sample AUC |
+:+=====================:+:=================:+
+| Logistics Regression  | 0.68785	    |
++-----------------------+-------------------+
+| Elastic Net           | 0.67173	    |
++-----------------------+-------------------+
+| LightGBM              | 0.63151	    |
++-----------------------+-------------------+
+| RandomForest	        | 		    |
++-----------------------+-------------------+
+| Simple Neural Network | 		    |
++-----------------------+-------------------+
 
-## Metrics
-When talking about model performance, we always talk about relevant matric . In this case, the performance metric is set to be `ROC AUC`. With solely ROC AUC in mind, it would be very reasonable to use Neural Network with post processing for best peformance 
+### Metrics
 
-## Complexity 
+When talking about model performance, we always talk about relevant matric . In this case, the performance metric is set to be `ROC AUC`. With solely ROC AUC in mind, it would be very reasonable to use **Neural Network** with post processing for best peformance 
+
+### Complexity 
 But there are other factors that our group would like to consider. One of which is model complexity. In this case, with small set of data, it takes about 10 minutes to train with 2000 epochs. However, if the data set get bigger, it would be more computationally costly to train the Neural Nets model. 
 
 Hence, Our group would like to suggest LightGBM for lower complexity 
 
 ## Model explainability 
-As a data analyst/ data scientist, we often have to explain our model to non-technical people . Hence, a deep learning model or lightgbm model is no more than a black box to the upper management . Therefore, in this case, `Logistic Regression` seem like a more reasonable choice. LASSO would also be a good option with good regularization factor 
-
+As a data analyst/ data scientist, we often have to explain our model to non-technical people . Hence, a deep learning model or lightgbm model is no more than a black box to the upper management . Therefore, in this case, **Logistic Regression** seem like a more reasonable choice. LASSO would also be a good option with good regularization factor 
 
 Overall, we would like to use LightGBM because its not computational cost is much lesser than Deep learning model while it is also easy to understand and explain in a more layman term to non-technical people . Such explanation could be found in this [page](https://xgboost.readthedocs.io/en/latest/tutorials/model.html) by Tianqi Chen, the author of XGBoost
 
