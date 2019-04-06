@@ -350,7 +350,7 @@ Looking at the correlation matrix, a lot of the variables are quite heavily corr
 fit <- glm(Restate_int ~ ., data = df.train, family = binomial)
 logodds <- predict(fit, df.test, type = "response")
 ```
-Using a logistic regression model, data of the 15 identified features mentioned above was fed into the model, with a resulting out-of-sample AUC of 0.62484.
+Using a logistic regression model, data of the 15 identified features mentioned above was fed into the model, with a resulting out-of-sample AUC of **0.62484**.
 
 This model result was further processed (post-processing) to improve the results of out-of-sample.
 
@@ -416,13 +416,7 @@ Comparing the 3 methods, we found the Out-of-sample AUC scores as follows:
 
 Based on the above, we can conclude that out of the 3 glmnet methods, Elastic Net gives the best out-of-sample AUC score.
 
-### Post-processing
-
-Similarly to previous models, we did post processing on the best model (Elastic Net) as outlined previously to improve the model.
-
-The results then improved as the Out-of-sample AUC improved to **0.67173**
-
-## lightgbm
+## LightGBM
 
 Besides traditional statistical methods, our group would like to try state-of-the-art machine learning technique. Hence, our group would like to try LightGBM.
 
@@ -621,14 +615,7 @@ From this,we can find out the best parameter is of such
 
 From the feature importance plot, we can see that most of the loss comes from `bkvlps'` . It shows that **(CAN SOMEONE HELP ME WITH THIS PART)**
 
-The cross validation AUC score of the model is **0.63151** 
-
-
-## Post processing
-
-Similar to other models, we run the same post-processing logic and the AUC score improved to 
-
-<INSERT THE SCORE OF THE MODEL HERE>
+The cross validation AUC score of the model is **0.64792** 
 
 ## Simple Neural Network
 
@@ -726,14 +713,6 @@ print('\n Validation Max score : {}'.format(np.max(history.history['val_auc'])))
 ``` 
 ### Results
 **<Please paste your result here>**
-
-### Post processing
-
-Similar to other models, we did a post processing technique as previously outlined. 
-
-with post processing inplace , our score improve drastically for most of our models :
-
-**<INSERT THE SCORE OF THE MODEL HERE-----BEFORE VS AFTER POST PROCESSING>**	
 	
 ## Post-Processing
 
@@ -758,13 +737,13 @@ After running the post-processing code above, the AUC score improved for most of
 +-----------------------+------------------------+-----------------------+
 | Method                | Before Post-Processing | After Post-Processing |
 :+=====================:+:======================:+:=====================:+
-| Logistics Regression  | 			 | 0.68785               |
+| Logistics Regression  | 0.62484		 | 0.68785               |
 +-----------------------+------------------------+-----------------------+
-| Elastic Net           | 		         | 0.67173	         |
+| Elastic Net           | 0.60349  	         | 0.67173	         |
 +-----------------------+------------------------+-----------------------+
 | RandomForest	 	| 			 | 	                 |
 +-----------------------+------------------------+-----------------------+
-| LightGBM              | 		         | 		         |
+| LightGBM              | 0.64792	         | 0.69951	         |
 +-----------------------+------------------------+-----------------------+
 | Simple Neural Network | 		         | 		         |
 +-----------------------+------------------------+-----------------------+
