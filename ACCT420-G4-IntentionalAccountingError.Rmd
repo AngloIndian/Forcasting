@@ -322,8 +322,27 @@ When plotted against year, there isn't any clear trend over the 5 years. Against
 ```{r, fig.height=20, fig.width=12, echo = F}
 fit <- glm(Restate_int ~ ., data = df.train, family = binomial)
 logodds <- predict(fit, df.test, type = "response")
+
+test1 <- cbind(df.test, logodds)
+test1 = test1[,c(1,16)]
+colnames(test1)[2] = "Restate_Int"
+write.csv(test1, "logistcs.csv", row.names = F)
 ```
 Using a logistic regression model, data of the 15 identified features mentioned above was fed into the model, with a resulting out-of-sample AUC of 0.62484.
+
+This model result was further processed (post-processing) to improve the results of out-of-sample.
+
+```{r, fig.height=20, fig.width=12, echo = F}
+Restate_List = unique(subset(df.train, df.train$Restate_int == 1)[,1])
+post_processing = function(x){
+  ifelse(x %in% Restate_List,0.6,0)}
+
+test1['boosting'] = lapply(test1['gvkey'],post_processing)
+test1['Restate_Int'] = test1['Restate_Int'] + test1['boosting']
+test1$Restate_Int = ifelse(test1$Restate_Int > 1,1,test1$Restate_Int)
+test1 = test1[,c(1,2)]
+write.csv(test1, "log-post.csv", row.names=FALSE)
+```
 
 # Results
 
