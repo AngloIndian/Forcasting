@@ -318,6 +318,209 @@ When plotted against year, there isn't any clear trend over the 5 years. Against
 
 ## lightbgm
 
+Besides traditional statistical methods, our group would like to try state-of-the-art machine learning technique. Hence, our group would like to try LightGBM.
+
+LightGBM is developed by Microsoft and recently open-sourced to the community in July 2017 [source]( https://github.com/Microsoft/LightGBM). The reason we use LightGBM instead of the popular [XGBoost]( https://xgboost.readthedocs.io/en/latest/) is that while both can achieve the similar accuracy using ensemble tree method with reproducable result, LightGBM is indeed much faster than its counter part 
+
+LightGBM, although it is a tree-based learning algorithm, is quite different from others like XGBoost. LightGBM grows tree vertically grows tree leaf-wise while other similar algorithm grow tree level-wise. Leaf chosen to grow are based on the maximum delta loss function
+
+Below are the shor ilustration on the differences between the leaf-wise and level-wise leaf growing strategy 
+
+[Insert leaf-wise tree growing]
+
+[Insert level-wise tree growing]
+
+
+Since Python is better in memory management ( especially in growing multiple tree at the same time), we decided to write our code in python 
+
+
+```
+#get number of feature and number of training rows
+X_train = train
+X_test = test
+
+num_train, num_feature = X_train.shape
+
+#Get parameters 
+params = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': 'auc',
+    'num_leaves': 20,
+    'learning_rate': 0.001,
+    'feature_fraction': 0.9,
+    'bagging_fraction': 0.8,
+    'bagging_freq': 20,
+    'verbose': 1000,
+}
+opt_params['params']['num_leaves'] = int(opt_params['params']['num_leaves'])
+opt_params['params']['max_depth'] = int(opt_params['params']['max_depth'])
+# print(int(opt_params['params']['num_leaves']))
+params = opt_params['params']
+params['metric'] = 'auc'
+params['boosting_type'] = 'gbdt'
+#------------------------------------------------------------
+from sklearn.model_selection import StratifiedKFold
+folds = StratifiedKFold(n_splits=10, shuffle=True, random_state=123)
+
+
+oof_preds = np.zeros(X_train.shape[0])
+sub_preds = np.zeros(X_test.shape[0])
+feature_importance_df = pd.DataFrame()
+feature_name = [col for col in X_train.columns]
+print(feature_name)
+print('Starting training with stratified cross validation...')
+for n_fold, (trn_idx, val_idx) in enumerate(folds.split(X_train,y)):
+    print('fold {} '.format(n_fold))
+    trn_x, trn_y = X_train[feature_name].iloc[trn_idx], y.iloc[trn_idx]
+    val_x, val_y = X_train[feature_name].iloc[val_idx], y.iloc[val_idx]
+    #Convert pandas data set into lgb format so that the package can read it
+    lgb_train = lgb.Dataset(trn_x, trn_y)
+    lgb_eval = lgb.Dataset(val_x, val_y)
+
+    #Setting the training parameter
+    gbm = lgb.train(params,
+                lgb_train,
+                num_boost_round=50000,
+                valid_sets=lgb_eval,
+                early_stopping_rounds=5000,
+                   verbose_eval=1000)
+    
+
+    oof_preds[val_idx] = gbm.predict(val_x, num_iteration=gbm.best_iteration) #get oof prediction
+    #predict on test set, take average
+    sub_preds += gbm.predict(X_test[feature_name], num_iteration=gbm.best_iteration) / folds.n_splits 
+    
+    #save the feature important 
+    fold_importance_df = pd.DataFrame()
+    fold_importance_df["feature"] = feature_name
+    fold_importance_df["importance"] = np.log1p(gbm.feature_importance(
+        importance_type='gain',
+        iteration=gbm.best_iteration))
+    fold_importance_df["fold"] = n_fold + 1
+    feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
+```
+
+## Hyperperameter tuning:
+Since tree based boosting method is very prone to overfitting, we would like to perform some hyperperameter tuning. There are many popular method for hyperperamter tuning :
+
+- Random search
+- Grid Search
+- Bayesian Optimization
+
+For exploration purposes, we tried out Bayesian Optimization with the help of `bayes_opt` python library. From the oficial github page, it was written that 
+
+```
+This is a constrained global optimization package built upon bayesian inference and gaussian process, that attempts to find the maximum value of an unknown function in as few iterations as possible. This technique is particularly suited for optimization of high cost functions, situations where the balance between exploration and exploitation is important.
+```
+
+The way bayesian optimzation works is that it construct a posterior distribution of function (gausian process ) that best describe the function that we want to optimize. In this case we want to optimize the hyperperameter to get the highest ROC AUC score. As the number of observation grow, the algorithm become more certain which region that are worth exploring and which are not, as seen in the picture below.
+
+The visual ilustration is given below:
+[Insert the picture below ]
+
+Below is the python code for our tuning process 
+```
+X = train
+def bayes_parameter_opt_lgb(X, y, init_round=15, opt_round=25, n_folds=10, random_seed=6, n_estimators=50000, learning_rate=0.001, output_process=False):
+    # prepare data
+    train_data = lgb.Dataset(data=X, label=y, free_raw_data=False)
+    # parameters
+    def lgb_eval(num_leaves, feature_fraction, bagging_fraction, max_depth, lambda_l1, lambda_l2, min_split_gain, min_child_weight):
+        params = {'application':'binary',
+                  'learning_rate':learning_rate,
+                  'boosting_type': 'gbdt',
+                  'metric':'auc'}
+        #Manually add in parameter that is in the arg* of the functions 
+        params["num_leaves"] = int(round(num_leaves))
+        params['feature_fraction'] = max(min(feature_fraction, 1), 0)
+        params['bagging_fraction'] = max(min(bagging_fraction, 1), 0)
+        params['max_depth'] = int(round(max_depth))
+        params['lambda_l1'] = max(lambda_l1, 0)
+        params['lambda_l2'] = max(lambda_l2, 0)
+        params['min_split_gain'] = min_split_gain
+        params['min_child_weight'] = min_child_weight
+        
+        #perform cross validation
+        cv_result = lgb.cv(params,
+                           train_data,
+                           nfold=n_folds,
+                           seed=random_seed,
+                           stratified=True,
+                           num_boost_round= n_estimators,
+                           early_stopping_rounds=5000,
+                           metrics=['auc'])
+        return max(cv_result['auc-mean'])
+    # Calling the function to optimize
+    # Indicate the range of the paramter that we want to explore 
+    lgbBO = BayesianOptimization(lgb_eval, {'num_leaves': (5,15 ),
+                                            'feature_fraction': (0.1, 0.9),
+                                            'bagging_fraction': (0.8, 1),
+                                            'max_depth': (2, 7),
+                                            'lambda_l1': (0, 5),
+                                            'lambda_l2': (0, 3),
+                                            'min_split_gain': (0.001, 0.1),
+                                            'min_child_weight': (5, 50)}, random_state=0)
+    # Initialize the optimization process 
+    lgbBO.maximize(init_points=init_round, n_iter=opt_round)
+    
+    # output optimization process
+    if output_process==True: lgbBO.points_to_csv("bayes_opt_result.csv")
+    
+    # return best parameters
+    print(lgbBO.max)
+    return lgbBO.max
+
+print('Performing Bayesian Optimization')
+opt_params = bayes_parameter_opt_lgb(X, y, init_round=5, opt_round=20, n_folds=10,
+									 random_seed=6, n_estimators=50000, learning_rate=0.05)
+
+```
+## Tuning Result
+Below are the result of our report 
+
+```
+Performing Bayesian Optimization
+|   iter    |  target   | baggin... | featur... | lambda_l1 | lambda_l2 | max_depth | min_ch... | min_sp... | num_le... |
+-------------------------------------------------------------------------------------------------------------------------
+|  1        |  0.6126   |  0.9098   |  0.6722   |  3.014    |  1.635    |  4.118    |  34.07    |  0.04432  |  13.92    |
+|  2        |  0.6153   |  0.9927   |  0.4068   |  3.959    |  1.587    |  4.84     |  46.65    |  0.008033 |  5.871    |
+|  3        |  0.6126   |  0.804    |  0.7661   |  3.891    |  2.61     |  6.893    |  40.96    |  0.04669  |  12.81    |
+|  4        |  0.6185   |  0.8237   |  0.6119   |  0.7168   |  2.834    |  4.609    |  23.66    |  0.02719  |  12.74    |
+|  5        |  0.6135   |  0.8912   |  0.5547   |  0.09395  |  1.853    |  5.06     |  32.76    |  0.09443  |  11.82    |
+|  6        |  0.6175   |  0.8869   |  0.2392   |  4.977    |  2.348    |  6.797    |  5.161    |  0.00634  |  5.264    |
+|  7        |  0.6095   |  0.8598   |  0.8069   |  0.1164   |  0.3642   |  2.011    |  5.017    |  0.07182  |  5.468    |
+|  8        |  0.614    |  0.9964   |  0.2003   |  4.742    |  2.993    |  2.241    |  27.28    |  0.03882  |  5.847    |
+|  9        |  0.602    |  0.9805   |  0.1272   |  4.668    |  2.822    |  2.34     |  5.705    |  0.08523  |  14.27    |
+|  10       |  0.6163   |  0.8      |  0.9      |  4.727    |  0.0      |  7.0      |  20.29    |  0.1      |  10.35    |
+|  11       |  0.6122   |  0.8322   |  0.8906   |  0.1014   |  2.907    |  2.154    |  48.65    |  0.08147  |  5.433    |
+|  12       |  0.6116   |  0.8283   |  0.7893   |  0.2574   |  2.968    |  6.993    |  7.793    |  0.0805   |  6.294    |
+|  13       |  0.6155   |  0.8142   |  0.102    |  2.101    |  0.3094   |  4.015    |  49.96    |  0.003752 |  14.57    |
+|  14       |  0.5976   |  0.8877   |  0.1254   |  0.1411   |  1.405    |  6.97     |  21.51    |  0.01773  |  14.81    |
+|  15       |  0.6131   |  0.8009   |  0.7091   |  0.3051   |  0.05169  |  6.817    |  48.54    |  0.04701  |  5.28     |
+|  16       |  0.6097   |  0.931    |  0.8767   |  3.642    |  2.903    |  2.273    |  10.64    |  0.008109 |  5.331    |
+|  17       |  0.6129   |  0.9409   |  0.6768   |  4.536    |  2.998    |  2.207    |  49.93    |  0.05696  |  14.89    |
+|  18       |  0.6139   |  0.8624   |  0.8285   |  4.434    |  0.05691  |  2.059    |  45.62    |  0.008032 |  9.003    |
+|  19       |  0.616    |  0.8037   |  0.8645   |  4.88     |  2.56     |  6.806    |  49.79    |  0.08645  |  7.811    |
+|  20       |  0.612    |  0.8411   |  0.7628   |  4.998    |  2.547    |  6.961    |  27.51    |  0.0716   |  5.039    |
+|  21       |  0.6221   |  0.8009   |  0.8486   |  4.627    |  0.3377   |  6.087    |  5.139    |  0.01408  |  6.939    |
+|  22       |  0.613    |  0.8958   |  0.8291   |  0.4021   |  0.07403  |  2.163    |  21.94    |  0.02942  |  7.211    |
+|  23       |  0.6065   |  0.8114   |  0.1177   |  4.862    |  2.685    |  2.048    |  26.22    |  0.02326  |  13.65    |
+|  24       |  0.616    |  0.9087   |  0.8885   |  0.07466  |  2.566    |  5.779    |  49.85    |  0.06142  |  13.62    |
+|  25       |  0.6246   |  0.9454   |  0.8759   |  4.716    |  2.757    |  6.142    |  5.335    |  0.02947  |  10.77    |
+=========================================================================================================================
+```
+
+From this,we can find out the best paramter is of such 
+```
+{'target': 0.6246018240462684, 'params': {'bagging_fraction': 0.9453921853224881, 'feature_fraction': 0.8758724811791585, 'lambda_l1': 4.715776837697188, 'lambda_l2': 2.7571325217441576, 'max_depth': 6.142352664871275, 'min_child_weight': 5.335296245530968, 'min_split_gain': 0.029474362387896753, 'num_leaves': 10.765327234377471}}
+```
+
+## Lightgbm result 
+
+From the feature important plot, we can see that most of the loss comes from `bkvlps'` . It shows that (CAN SOMEONE HELP ME WITH THIS PART)
+
+The cross validation score of the model is `CV score: 0.63151` 
 ## Logistic Regression
 ```{r, fig.height=20, fig.width=12, echo = F}
 fit <- glm(Restate_int ~ ., data = df.train, family = binomial)
@@ -344,11 +547,136 @@ test1 = test1[,c(1,2)]
 write.csv(test1, "log-post.csv", row.names=FALSE)
 ```
 
-Hi
+## Neural Network
+
+With the goal of `fast protyping, fast failing` mindset, our group also try a simple Neural Network. Our group use Keras API with Tensorflow backend over Pytorch. Although both framework are excellent for production grade  modelling, we decided to go with Keras because of its simple, easy to use API with less modification from the boiler plate code base
+
+```
+Layer (type)                 Output Shape              Param #   
+=================================================================
+dense_28 (Dense)             (None, 150)               2400      
+_________________________________________________________________
+batch_normalization_25 (Batc (None, 150)               600       
+_________________________________________________________________
+activation_25 (Activation)   (None, 150)               0         
+_________________________________________________________________
+dropout_25 (Dropout)         (None, 150)               0         
+_________________________________________________________________
+dense_29 (Dense)             (None, 150)               22650     
+_________________________________________________________________
+batch_normalization_26 (Batc (None, 150)               600       
+_________________________________________________________________
+activation_26 (Activation)   (None, 150)               0         
+_________________________________________________________________
+dropout_26 (Dropout)         (None, 150)               0         
+_________________________________________________________________
+dense_30 (Dense)             (None, 150)               22650     
+_________________________________________________________________
+batch_normalization_27 (Batc (None, 150)               600       
+_________________________________________________________________
+activation_27 (Activation)   (None, 150)               0         
+_________________________________________________________________
+dropout_27 (Dropout)         (None, 150)               0         
+_________________________________________________________________
+dense_31 (Dense)             (None, 1)                 151       
+=================================================================
+```
+
+The model architecture is very basic. We did a batch normalization after the first Dense group with a hope to stay away from the Vanishing Gradient pitfall. We also use a `drop out` rate of 0.2 with a hope to avoid overfitting too much since we are using 2000 `epochs` to train our model.
+
+Our group feel that we have too little data to play with, hence, we use `epoch = 2000` with a hope that model can pick up more meaningful features . We also use large `batch_size` to make the training faster and also to minimize the problem of noisy data when using small epoch
+
+Below are our code to run the model 
+```
+def auc(y_true, y_pred):
+    auc = tf.metrics.auc(y_true, y_pred)[1]
+    K.get_session().run(tf.local_variables_initializer())
+    return auc
+
+
+#Model NN definition
+def create_model_nn(in_dim,layer_size=150):
+    model = Sequential()
+    model.add(Dense(layer_size,input_dim=in_dim))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+    model.add(Dropout(0.2))
+    for i in range(2):
+        model.add(Dense(layer_size))
+        model.add(BatchNormalization())
+        model.add(Activation('relu'))
+        model.add(Dropout(0.2))
+    model.add(Dense(1, activation='sigmoid'))
+    adam = optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999)
+    model.compile(optimizer=adam,loss='binary_crossentropy',metrics = [auc])
+    print(model.summary())
+    return model
+#_____________________________________________
+sub_name = 'submission'
+class_weights = None
+weighted = True
+balanced = False
+
+#split the data into validation set and training set 
+X_train, X_test, y_train, y_test = train_test_split(train, y, test_size=0.1, random_state=1234,stratify = y)
+#____________________________________________
+
+#Class weights to handle the imbalanced dataset
+
+if weighted:
+    sub_name = sub_name+'_weighted'
+    if balanced:
+        class_weights = class_weight.compute_class_weight('balanced',
+                                                 np.unique(y_train),
+                                                 y_train)
+    else:
+        class_weights = {
+            1:50, 
+            0:1
+                }
+print('creating model')
+model_nn = create_model_nn(train.shape[1])
+callback = EarlyStopping(monitor="val_auc", patience=500, verbose=0, mode='max')
+history = model_nn.fit(X_train, y_train, validation_data = (X_test,y_test),epochs=2000,batch_size=4048,verbose=1,callbacks=[callback],class_weight=class_weights)
+target_pred_nn = model_nn.predict(test)
+print('\n Validation Max score : {}'.format(np.max(history.history['val_auc'])))
+``` 
 
 # Results
+<Please paste your result here>
+
+## Post processing
+
+One thing to take note from our training data is that we remove the `gvkey` and `fyear` column. Therefore, little information about the compare and time series factor is carried out into our model. 
+
+Hence, we would like to perform some post-processing to incorporate more time-series related information into our prediction
+
+From the business perspective, our group hypothesize that company that have major Accounting Error in the previous year are likely to have accounting error in the future. Specifically in this data, we observe that 2010 is right during recession period, hence company that previously have intentional accounting error (indication of weak company performance), is likely to have accounting mistatement again. Therefore, for those companies, we will boost the probability by 0.6 and cap at 1. The reason of choosing `0.6` is purely by trial and error but we also think that it should not influence too much on the probability
+
+with post processing inplace , our score improve drastically for most of our models :
+
+<INSERT THE SCORE OF THE MODEL HERE-----BEFORE VS AFTER POST PROCESSING>
+
+# Discussion
+
+There are a few factors that we want to discuss in choosing our final model: metric performance, complexity , model explainability and interpretability 
+
+## Metrics
+When talking about model performance, we always talk about relevant matric . In this case, the performance metric is set to be `ROC AUC`. With solely ROC AUC in mind, it would be very reasonable to use Neural Network with post processing for best peformance 
+
+## Complexity 
+But there are other factors that our group would like to consider. One of which is model complexity. In this case, with small set of data, it takes about 10 minutes to train with 2000 epochs. However, if the data set get bigger, it would be more computationally costly to train the Neural Nets model. 
+
+Hence, Our group would like to suggest LightGBM for lower complexity 
+
+## Model explainability 
+As a data analyst/ data scientist, we often have to explain our model to non-technical people . Hence, a deep learning model or lightgbm model is no more than a black box to the upper management . Therefore, in this case, `Logistic Regression` seem like a more reasonable choice. LASSO would also be a good option with good regularization factor 
+
+
+Overall, we would like to use LightGBM because its not computational cost is much lesser than Deep learning model while it is also easy to understand and explain in a more layman term to non-technical people . Such explanation could be found in this [page](https://xgboost.readthedocs.io/en/latest/tutorials/model.html) by Tianqi Chen, the author of XGBoost
+
 
 # References
 http://www.theforensicauditor.com/2017/10/02/financial-statement-fraud/  
 https://books.google.com.sg/books?id=S6Y2DwAAQBAJ&printsec=frontcover#v=onepage&q&f=false
-
+https://xgboost.readthedocs.io/en/latest/tutorials/model.html 
