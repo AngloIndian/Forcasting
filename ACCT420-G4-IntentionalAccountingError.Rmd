@@ -316,6 +316,15 @@ When plotted against year, there isn't any clear trend over the 5 years. Against
 
 # Modeling Methods and Algorithms
 
+## lightbgm
+
+## Logistic Regression
+```{r, fig.height=20, fig.width=12, echo = F}
+fit <- glm(Restate_int ~ ., data = df.train, family = binomial)
+logodds <- predict(fit, df.test, type = "response")
+```
+Using a logistic regression model, data of the 15 identified features mentioned above was fed into the model, with a resulting out-of-sample AUC of 0.62484.
+
 # Results
 
 # References
