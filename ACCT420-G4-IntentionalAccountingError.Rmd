@@ -39,13 +39,7 @@ This contains variables that are directly obtainable from WRDS database. It will
 +---------------+--------------------------+
 | Variable Name | Accounting Name          |
 +:=============:+:========================:+
-| at            | Assets - Total           |
-+---------------+--------------------------+
 | act           | Current Assets - Total   |
-+---------------+--------------------------+
-| fea           | Foreign Exchange Assets  |
-+---------------+--------------------------+
-| intan         | Intangible Assets - Total|
 +---------------+--------------------------+
 
 These variables provide an overall idea of the scale of the company. Because companies may engage in fraud that will result in their assets being overstated, assets are necessary to be included in the analysis. While the balances of more specific sub-classifications of assets may be more informative and indicative of any specific fraud risk, these variables are still chosen as a machine learning algorithm may have difficulties developing a consistent rule or generalisation based on more specific sub-classifications of assets. One such example is that a company may choose to manipulate Property, Plant and Equipment - Total (Net) account while another may choose to manipulate Receivables Total account.
@@ -59,64 +53,8 @@ Companies may generally be more incentivised to manipulate assets by recording a
 +:=============:+:===========================================:+
 | ppent         | Property, Plant and Equipment - Total (Net) |
 +---------------+---------------------------------------------+
-| aqc           | Acquisitions                                |
-+---------------+---------------------------------------------+
 
 Fixed assets, such as property, plant and equipment, are long-term assets. If the revaluation model is used for these assets, fraud can be perpetuated by overstating the respective fair values. Companies may also retain obsolete and unused assets on their statement of financial position, which not only overstates assets but also overstates net income since losses incurred when disposing these assets are not accounted for.
-
-#### Cash
-
-+---------------+---------------------------------+
-| Variable Name | Accounting Name                 |
-+:=============:+:===============================:+
-| ch            | Cash                            |
-+---------------+---------------------------------+
-| che           | Cash and Short-term Investments |
-+---------------+---------------------------------+
-| dptb          | Deposits - Total - Banks        |
-+---------------+---------------------------------+
-| dptc          | Deposits - Total - Customers    |
-+---------------+---------------------------------+
-
-It is more difficult to commit fraud by manipulating cash balances as auditors can verify cash balances by performing cash counts and bank reconciliations. Nevertheless, unrealistic movements in cash balances may be a symptom of some underlying manipulation. Cash may also be overstated to conceal misappropriation by the company’s employees.
-
-#### Receivables
-
-+---------------+-------------------------------------+
-| Variable Name | Accounting Name                     |
-+:=============:+:===================================:+
-| artfs         | Accounts Receivable/Debtors - Total |
-+---------------+-------------------------------------+
-| rect          | Receivables Total                   |
-+---------------+-------------------------------------+
-| urect         | Receivables (Net)                   |
-+---------------+-------------------------------------+
-| lcat          | Loans/Claims/Advances - Total       |
-+---------------+-------------------------------------+
-
-Companies may overstate their receivables by recording fictitious sales. This is related to the recognition of fictitious revenue as well, since increases in revenue are typically matched by increases in current assets. Moreover, provisions for doubtful debts can also be lowered to make the book value of receivables higher than they should rightfully be while decreasing bad debt expense. It is much easier to manipulate receivables than cash as it is harder to verify the existence of receivables, whereas cash can simply be counted.
-
-#### Inventories
-
-+---------------+---------------------+
-| Variable Name | Accounting Name     |
-+:=============:+:===================:+
-| invt          | Inventories - Total |
-+---------------+---------------------+
-
-Companies may manipulate inventory levels in several ways. One method is to inflate the value of inventory and/or decrease cost of goods sold, perhaps by recording non-existent inventory, not writing down damaged inventory, and simply adjusting the value of inventory. This improves both the income statement and the statement of financial position. Inventory may also be intentionally understated in order to reduce income tax obligations.
-
-#### Prepaid Expenses
-
-+---------------+------------------+
-| Variable Name | Accounting Name  |
-+:=============:+:================:+
-| xpp           | Prepaid Expenses |
-+---------------+------------------+
-| dc            | Deferred Charges |
-+---------------+------------------+
-
-Companies can potentially commit fraud by treating expenses as prepaid when they should in fact be recognised in the current period. This reduces expenses and leads to inflated net income values.
 
 #### Goodwill
 
@@ -125,122 +63,18 @@ Companies can potentially commit fraud by treating expenses as prepaid when they
 +:=============:+:=====================:+
 | gdwl          | Goodwill              |
 +---------------+-----------------------+
-| gdwlam        | Goodwill Amortization |
-+---------------+-----------------------+
 
 As an intangible asset, goodwill may be inflated without any consequences because physically they may not have value. As such, there is a high possibiltiy to goodwill being overstated, or its amortization being understated without any valid reason.
-
-#### Investments
-
-+---------------+---------------------------------------+
-| Variable Name | Accounting Name                       |
-+:=============:+:=====================================:+
-| iati          | Investment Assets - Total (Insurance) |
-+---------------+---------------------------------------+
-| capx          | Capital Expenditure                   |
-+---------------+---------------------------------------+
-| ip            | Investment Property                   |
-+---------------+---------------------------------------+
-| ist           | Investments Securities - Total        |
-+---------------+---------------------------------------+
-| ivpt          | Investments - Permanent - Total       |
-+---------------+---------------------------------------+
-| ivps          | Short-term Investments - Total        |
-+---------------+---------------------------------------+
-
-It is important for the management to keep track of all its investment records because investment assets will vary depending on the market economy. There may be inflation of investments by purposely understating the buy price, causing overall assets to be overstated.
 
 ### Liabilities
 
 +---------------+--------------------------------+
 | Variable Name | Accounting Name                |
 +:=============:+:==============================:+
-| lt            | Liabilities - Total            |
-+---------------+--------------------------------+
-| pvt           | Provisions - Total             |
-+---------------+--------------------------------+
-| clt           | Contingent Liabilities - Total |
-+---------------+--------------------------------+
 | dltt          | Long-term Debt                 |
 +---------------+--------------------------------+
 
 Liabilities represent a company’s financial obligations to third parties. Companies have an incentive to understate their liabilities to make their statements of financial position appear healthier, as well as to avoid breaching debt covenants. Other ways of concealing liabilities include taking loans from related entities and writing off debts as forgiven bad debts. Companies may also overstate liabilities if they are practising “cookie jar” accounting, which involves creating reserves during years of good performance; the reserves are subsequently tapped into to inflate performance in bad years. Such liabilities may include things like provisions for restructuring or unearned income. Through this, companies can smooth out volatility in their financial performance, misleading investors into believing that they are consistently meeting earnings targets.
-
-#### Accrued Expenses
-
-+---------------+--------------------------------------+
-| Variable Name | Accounting Name                      |
-+:=============:+:====================================:+
-| xacc          | Accrued Expenses                     |
-+---------------+--------------------------------------+
-| aedi          | Accrued Expenses and Deferred Income |
-+---------------+--------------------------------------+
-
-Companies may intentionally understate their accrued expenses by not recording them or only recording them in subsequent periods.
-
-#### Accounts Payable
-
-+---------------+--------------------------+
-| Variable Name | Accounting Name          |
-+:=============:+:========================:+
-| ap            | Accounts Payable - Trade |
-+---------------+--------------------------+
-| dlcch         | Current Debt Changes     |
-+---------------+--------------------------+
-
-Companies may understate accounts payable by recording payables in future periods, or inflating purchase returns and discounts.
-
-#### Unearned Income
-
-+---------------+----------------------------+
-| Variable Name | Accounting Name            |
-+:=============:+:==========================:+
-| ui            | Unearned Income            |
-+---------------+----------------------------+
-| drc           | Deferred Revenue Current   |
-+---------------+----------------------------+
-| drlt          | Deferred Revenue Long-term |
-+---------------+----------------------------+
-
-Companies may treat what should be unearned income as earned income. As a result, a sudden dip in the level of unearned income, or the ratio of unearned income to revenue, may be suspicious. Alternatively, unearned income can be used as a reserve in “cookie jar” accounting, as discussed earlier.
-
-#### Capital
-
-+---------------+----------------------------------------------+
-| Variable Name | Accounting Name                              |
-+:=============:+:============================================:+
-| wcap          | Working Capital                              |
-+---------------+----------------------------------------------+
-| cstk          | Common/Ordinary Stok (Capital)               |
-+---------------+----------------------------------------------+
-| pstk          | Preferred/Preference Stock (Capital) - Total |
-+---------------+----------------------------------------------+
-| tstk          | Treasury Stock - Total (All Capital)         |
-+---------------+----------------------------------------------+
-
-Companies may have an incentive to overstate working capital due to debt covenants, or simply make their liquidity position appear healthier. This can be done by manipulating various asset and liability accounts.
-
-### Equity 
-
-+---------------+-------------------------------+
-| Variable Name | Accounting Name               |
-+:=============:+:=============================:+
-| seq           | Stockholders' Equity - Total  |
-+---------------+-------------------------------+
-| ceq           | Common/Ordinary Equity - Total|
-+---------------+-------------------------------+
-| ceqt          | Common Equity Tangible        |
-+---------------+-------------------------------+
-| rveqt         | Equity Reserves - Total       |
-+---------------+-------------------------------+
-| rvti          | Reserves - Total              |
-+---------------+-------------------------------+
-
-Equity may be overstated if assets have been overstated or liabilities have been understated. Furthermore, misstatements in net income and other comprehensive income will also affect equity. 
-
-The market value of the company and number of common shares outstanding will represent the size of the company. A larger company size would indicate that the level of internal control will be higher. This could suggest that larger companies are less likely to have fraudulent misstatements.
-
-However, directors and managers from larger companies, especially publicly listed ones, face greater scrutiny and expectations from shareholders. This puts a greater amount of pressure on them and hence creates greater motivations to manipulate financial statements. 
 
 ### Income
 
@@ -251,26 +85,8 @@ However, directors and managers from larger companies, especially publicly liste
 +:=============:+:=============================:+
 | revt          | Revenue - Total               |
 +---------------+-------------------------------+
-| opiti         | Operating Income - Total      |
-+---------------+-------------------------------+
-| fca           | Foreign Exchange Income (Loss)|
-+---------------+-------------------------------+
-| fopt          | Funds from Operations Total   |
-+---------------+-------------------------------+
 
 Companies have a strong incentive to overstate revenue to improve their apparent financial performance. Revenue can be overstated via several methods: fictitious sales from fictitious customers, fictitious sales from real customers, modification of invoices for actual sales, recording revenue in the wrong period, recording revenue as earned instead of unearned, variable selling prices, channel stuffing (sell retailers more products than they are expected to sell and round-tripping, which involves making a “sale” to another party, often a related entity, then buying back the item “sold”. 
-
-#### Comprehensive Income
-
-+---------------+----------------------------------------------+
-| Variable Name | Accounting Name                              |
-+:=============:+:============================================:+
-| acominc       | Accumulated Other Comprehensive Income (Loss)|
-+---------------+----------------------------------------------+
-| ci or citotal | Comprehensive Income - Total                 |
-+---------------+----------------------------------------------+
-
-Comprehensive Income may be overstated in order to make the company seem as more profitable.
 
 ### Expenses
 
@@ -278,8 +94,6 @@ Comprehensive Income may be overstated in order to make the company seem as more
 | Variable Name | Accounting Name      |
 +:=============:+:====================:+
 | xlr           | Staff Expense - Total|
-+---------------+----------------------+
-| xt            | Expense - Total      |
 +---------------+----------------------+
 
 Expenses may be understated in order to fraudulently inflate profit levels. One method would be capitalising expenses improperly. The following categories of expenses are more likely to be improperly capitalised: start-up costs, research and development costs, repairs and maintenance recorded under property, plant and equipment, software development and acquisition, websites, development of intangible assets, advertising, and other deferrals and prepaid expenses. Alternatively, expenses may be deferred to later periods. Another measure, which may be used in poorly performing years, is known as a “big bath” strategy and may involve, among other methods, recording write-offs, which are subsequently reversed to inflate profits.
@@ -299,31 +113,17 @@ The cost of goods sold may be understated if methods like inventory overstatemen
 +---------------+-------------------------------------------------------------+
 | Variable Name | Accounting Name                                             |
 +:=============:+:===========================================================:+
-| am            | Accumulated Other Comprehensive Income (Loss)               |
-+---------------+-------------------------------------------------------------+
 | dp            | Comprehensive Income - Total                                |
-+---------------+-------------------------------------------------------------+
-| dpact         | Depreciation, Depletion and Amortization (Accumulated)      |
 +---------------+-------------------------------------------------------------+
 
 Amortization and depreciation may be manipulated by adjusting the useful lives of assets, resulting in a reduction in expense. 
 
-###Profit
+### Profit
 
 +---------------+-------------------------------------+
 | Variable Name | Accounting Name                     |
 +:=============:+:===================================:+
-| gp            | Gross Profit (Loss)                 |
-+---------------+-------------------------------------+
 | ebit          | Earnings Before Interest and Taxes  |
-+---------------+-------------------------------------+
-| ebitda        | Earnings Before Interest            |
-+---------------+-------------------------------------+
-| ni            | Net Income (Loss)                   |
-+---------------+-------------------------------------+
-| gla           | Gain/Loss after Tax                 |
-+---------------+-------------------------------------+
-| re            | Retained Earnings                   |
 +---------------+-------------------------------------+
 
 Companies have an incentive to overstate profit, and this can be done by overstating revenue and/or understating expenses. An important implication of earning manipulation is that it is a combination of aggressive interpretation and application of accounting rules. This signals that if profit manipulation is present, other variables may be manipulated to the benefit of the firm as well.
@@ -335,8 +135,6 @@ Companies have an incentive to overstate profit, and this can be done by oversta
 +:=============:+:=======================================:+
 | dv            | Cash Dividends (Cash Flow)              |
 +---------------+-----------------------------------------+
-| utfdoc        | Total Funds from Operations (Cash Flow) |
-+---------------+-----------------------------------------+
 
 Cash flows may be inflated to improve a company’s reported performance. Companies may manipulate cash flow via several methods. One is manipulating accounts payable, possibly by writing cheques and not deducting the amount on the cheques. Another would be to speed up the recognition of receivables, though this leads to poorer cash flows in the subsequent period. Companies may also classify non-operating cash flows as operating cash flows.  
 
@@ -345,144 +143,28 @@ Cash flows may be inflated to improve a company’s reported performance. Compan
 +---------------+--------------------------------------------------------------------+
 | Variable Name | Accounting Name                                                    |
 +:=============:+:==================================================================:+
-| bkvlps        | Book Value Per Share                                      |
-+---------------+--------------------------------------------------------------------+
-| epsfi         | Earnings Per Share (Diluted) Including Extraordinary Items         |
-+---------------+--------------------------------------------------------------------+
-| epspi         | Earnings Per Share (Basic) Including Extraordinary Items           |
-+---------------+--------------------------------------------------------------------+
-| epsfi         | Options Exercisable                                                |
+| bkvlps        | Book Value Per Share                                               |
 +---------------+--------------------------------------------------------------------+
 
 Shares represent how profitable a company is. As a company becomes more profitable, then shares price as well as the payout will usually be high as well. Of course, companies will try to offer high shares earnings so as to prove that they are profitable and worth investing in.
 
-### Dividends
-
-+---------------+----------------------------------------+
-| Variable Name | Accounting Name                        |
-+:=============:+:======================================:+
-| dvc           | Dividends Common/Ordinary              |
-+---------------+----------------------------------------+
-| dvpd          | Cash Dividends Paid                    |
-+---------------+----------------------------------------+
-| dvt           | Dividends - Total                      |
-+---------------+----------------------------------------+
-| dvpsp_f       | Dividends Per Share - Pay-Date - Fiscal|
-+---------------+----------------------------------------+
-| dvpsx_f       | Dividends Per Share - Ex-Date - Fiscal |
-+---------------+----------------------------------------+
-
-Similar to shares, dividends are payouts to shareholders, and is a good representative of how well a company is doing.
-
-### Others
-
-+---------------+-----------------------------------+
-| Variable Name | Accounting Name                   |
-+:=============:+:=================================:+
-| au            | Auditor                           |
-+---------------+-----------------------------------+
-| auop          | Auditor Opinion                   |
-+---------------+-----------------------------------+
-| auopic        | Auditor Opinion - Internal Control|
-+---------------+-----------------------------------+
-
-Companies that have more negative auditors’ opinions may be more likely to be engaging in fraudulent activity.
-
-## Percentage Growth Rate
-
-Year-on-year percentage growth rates were calculated for the following variables, given their likelihood of being manipulated, whether directly or indirectly: am  (Amortization of Intangibles), dp (Depreciation and Amortization), invt (Inventories - Total), gp (Gross Profit (Loss)), rect (Receivables Total), revt  (Revenue - Total) and ni/at (Return on Assets). These growth rates will enable any suspicious fluctuations in the values of these variables to be identified.
-
 ## Ratios
 
-Ratios are indicators of a company’s health and may be manipulated to deceive users of financial statements such as creditors and investors (Courtis, 1978). Alternatively, unusual values for certain ratios may be a sign that some underlying manipulation is taking place.
+Ratios are indicators of a company’s health and may be manipulated to deceive users of financial statements such as creditors and investors. Alternatively, unusual values for certain ratios may be a sign that some underlying manipulation is taking place.
 
-### Liquidity/Leverage Ratios
-
-+-------------------------+------------+-------------+
-| Ratio Name              | Ratio Code | Formula     |
-+:=======================:+:==========:+:===========:+
-| Current Liquidity       |  r_lct_act | $$lct/act$$ |
-+-------------------------+------------+-------------+
-| Debt to Equity Leverage |  r_lt_seq  | $$lt/seq$$  |
-+-------------------------+------------+-------------+
-| Debt to Assets Leverage |  r_lt_at   | $$lt/at$$   |
-+-------------------------+------------+-------------+
++----------------------------+--------------------+---------------------+
+| Ratio Name                 |     Ratio Code     |       Formula       |
++:==========================:+:==================:+:===================:+
+| Leverage Index             |   leverage_index   |     $$dltt/act$$    |
++----------------------------+--------------------+---------------------+
+| Depreciation Index         |    depre_index     |  $$dp/(dp+ppent)$$  |
++----------------------------+--------------------+---------------------+
+| Staff Administration Index |   saleadmin_index  |     $$xlr/revt$$    |
++----------------------------+--------------------+---------------------+
 
 Liquidity ratios measure the ability of a company to meet its short-term financial obligations, while leverage ratios deal more with long-term obligations and provide a measure of the degree of risk taken on by the company. The lower the liquidity/leverage ratios, the higher the pressure on the company to misstate financial statements so as to avoid going into default or be faced with stricter covenants or penalties.  
 
-### Activity Ratios
-
 These ratios analyse the efficiency of a company. They can reveal how fast the company is able to turn assets into cash. If a company is not using its resources well (e.g. not fully utilising its available assets to generate sales), it may manipulate its financial misstatements to look more favourable or appear to be profitable. Such ratios may also provide evidence that the accounts involved have been manipulated.
-
-#### Inventory Ratios
-
-+-------------------------+-------------+--------------+
-| Ratio Name              | Ratio Code  | Formula      |
-+:=======================:+:===========:+:============:+
-| Inventory to Assets     |  r_invt_at  | $$invt/at$$  |
-+-------------------------+-------------+--------------+
-| Inventory to Revenue    |  r_invt_revt| $$invt/revt$$|
-+-------------------------+-------------+--------------+
-
-These ratios determine the proportion of inventory relative to total assets or revenue. If they are high, it means that the company may face difficulties selling these inventories. Difficulties in selling inventories could be indicative of existing problems such as a declining ability to compete in the marketplace, which can result in pressure on the managers to misstate financial statements. Alternatively, a high value for this ratio may imply inventory overstatement.
-
-#### Receivables Ratio
-
-+-------------------------+-------------+---------------+
-| Ratio Name              | Ratio Code  | Formula       |
-+:=======================:+:===========:+:=============:+
-| Receivables to Revenue  | r_rect_revt | $$rect/revt$$ |
-+-------------------------+-------------+---------------+
-
-This ratio determines the proportion of receivables relative to revenue. If it is high, it means that companies may find it difficult converting these receivables into cash, which could be indicative of existing problems such as customers’ declining ability to pay up, or the company trying to boost sales via unwise credit policies. In either case, a high ratio demonstrates the company’s inability to collect revenues in the future and may lead to higher pressure on the managers to misstate earnings to deceive financial statement users into believing the company has good prospects.
-
-### Asset Proportion Ratios
-
-+-------------------------+-------------+--------------+
-| Ratio Name              | Ratio Code  | Formula      |
-+:=======================:+:===========:+:============:+
-| PPE to Asset            |  r_ppent_at | $$ppent/at$$ |
-+-------------------------+-------------+--------------+
-| Working Capital to Asset|  r_wcap_at  | $$wcap/at$$  |
-+-------------------------+-------------+--------------+
-| Cash to Asset           |  r_ch_at    | $$ch/at$$    |
-+-------------------------+-------------+--------------+
-
-These ratios provide insight into the company’s asset structure. Property, plant and equipment, working capital and cash all play crucial roles in the company’s business. An overly high ratio could be suspicious if the company is trying to inflate the book value of certain types of assets. On the other hand, an overly low ratio may be indicative of financial problems within the company, putting pressure on managers to misstate financial statements. It should be noted that for companies in the financial industries, the ppent/at ratio may be relatively low. 
-
-### Profitability Ratios
-
-These ratios analyze the profitability of a company. Low values for these ratios suggest that the company is not profitable; less profitable companies may turn to financial misstatements to meet targets or appear more financially healthy. Alternatively, excessively high ratios may also suggest earnings manipulation.
-
-#### Net Income / Profit Ratios
-
-+-------------------------+-------------+--------------+
-| Ratio Name              | Ratio Code  | Formula      |
-+:=======================:+:===========:+:============:+
-| Net Income to PPE       |  r_ni_ppent | $$ni/ppent$$ |
-+-------------------------+-------------+--------------+
-| Return on Asset         |  roa        | $$ni/at$$    |
-+-------------------------+-------------+--------------+
-| Net Income to Revenue   |  r_ni_revt  | $$ni/revt$$  |
-+-------------------------+-------------+--------------+
-| Gross Profit to Asset   |  r_gp_at    | $$gp/at$$    |
-+-------------------------+-------------+--------------+
-
-These ratios compare a firm’s profit to its resources or sales. The higher they are, the better the company’s ability to generate income from its resources or sales. This may suggest a financially healthy company that has less incentive to commit fraud, or it may be indicative of the intentional overstatement of earnings.
-
-### Accrual Ratios
-
-These ratios analyze the amount of accrual accounting used by a company. Accrual ratios can provide a picture of the extent to which a company is using accrual accounting to boost financial performance. Accrual accounting is often misused by managers to hide declining performance (Dechow, Patricia and Ge, Weili and Larson, Chad Russell and Sloan, Richard, 2010). The higher the accrual ratios, the higher the probability of a company masking declining performance via the improper application of accrual accounting.
-
-#### Unearned Income to Revenue
-
-+----------------------------+-------------+-------------+
-| Ratio Name                 | Ratio Code  | Formula     |
-+:==========================:+:===========:+:===========:+
-| Unearned Income to Revenue | r_ui_revt   | $$ui/revt$$ |
-+----------------------------+-------------+-------------+
-
-As mentioned above, improper revenue recognition is one of the most common vehicles for financial reporting fraud. However, instead of overstating revenue, companies sometimes want to delay revenue recognition and utilise “cookie jar” accounting. The company may recognise unearned income in profitable years and realize its unearned income in less profitable years. Hence, a high value for this ratio may be indicative of “cookie jar” accounting.
 
 # Exploratory Data Analysis
 
