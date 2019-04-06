@@ -354,25 +354,6 @@ Using a logistic regression model, data of the 15 identified features mentioned 
 
 This model result was further processed (post-processing) to improve the results of out-of-sample.
 
-### Post-processing of Logistics Regression
-```{r, fig.height=20, fig.width=12, echo = F}
-Restate_List = unique(subset(df.train, df.train$Restate_int == 1)[,1])
-post_processing = function(x){
-  ifelse(x %in% Restate_List,0.6,0)}
-
-test1['boosting'] = lapply(test1['gvkey'],post_processing)
-test1['Restate_Int'] = test1['Restate_Int'] + test1['boosting']
-test1$Restate_Int = ifelse(test1$Restate_Int > 1,1,test1$Restate_Int)
-test1 = test1[,c(1,2)]
-```
-One thing to take note from our training data is that we remove the `gvkey` and `fyear` column. Therefore, little information about the compare and time series factor is carried out into our model. 
-
-Hence, we would like to perform some post-processing to incorporate more time-series related information into our prediction
-
-From the business perspective, our group hypothesize that company that have major Accounting Error in the previous year are likely to have accounting error in the future. Specifically in this data, we observe that 2010 is right during recession period, hence company that previously have intentional accounting error (indication of weak company performance), is likely to have accounting mistatement again. Therefore, for those companies, we will boost the probability by 0.6 and cap at 1. The reason of choosing `0.6` is purely by trial and error but we also think that it should not influence too much on the probability
-
-After running the post-processing code above, the AUC score improved to **0.68785**
-
 ## GLMNET
 
 We also tried a more advanced version of logistics regression using the Glmnet package. Glmnet is a package that fits a generalized linear model via penalized maximum likelihood. We tried 3 methods under this, Ridge, LASSO and Elastic Net, which differs in the way the penalties are assigned. 
@@ -441,7 +422,7 @@ Similarly to previous models, we did post processing on the best model (Elastic 
 
 The results then improved as the Out-of-sample AUC improved to **0.67173**
 
-## lightbgm
+## lightgbm
 
 Besides traditional statistical methods, our group would like to try state-of-the-art machine learning technique. Hence, our group would like to try LightGBM.
 
@@ -645,13 +626,7 @@ The cross validation AUC score of the model is **0.63151**
 
 ## Post processing
 
-One thing to take note from our training data is that we remove the `gvkey` and `fyear` column. Therefore, little information about the compare and time series factor is carried out into our model. 
-
-Hence, we would like to perform some post-processing to incorporate more time-series related information into our prediction
-
-From the business perspective, our group hypothesize that company that have major Accounting Error in the previous year are likely to have accounting error in the future. Specifically in this data, we observe that 2010 is right during recession period, hence company that previously have intentional accounting error (indication of weak company performance), is likely to have accounting mistatement again. Therefore, for those companies, we will boost the probability by 0.6 and cap at 1. The reason of choosing `0.6` is purely by trial and error but we also think that it should not influence too much on the probability
-
-with post processing inplace , our score improve drastically for most of our models :
+Similar to other models, we run the same post-processing logic and the AUC score improved to 
 
 <INSERT THE SCORE OF THE MODEL HERE>
 
@@ -760,23 +735,43 @@ with post processing inplace , our score improve drastically for most of our mod
 
 **<INSERT THE SCORE OF THE MODEL HERE-----BEFORE VS AFTER POST PROCESSING>**	
 	
+## Post-Processing
+
+```{r, fig.height=20, fig.width=12, echo = F}
+Restate_List = unique(subset(df.train, df.train$Restate_int == 1)[,1])
+post_processing = function(x){
+  ifelse(x %in% Restate_List,0.6,0)}
+
+test1['boosting'] = lapply(test1['gvkey'],post_processing)
+test1['Restate_Int'] = test1['Restate_Int'] + test1['boosting']
+test1$Restate_Int = ifelse(test1$Restate_Int > 1,1,test1$Restate_Int)
+test1 = test1[,c(1,2)]
+```
+One thing to take note from our training data is that we remove the `gvkey` and `fyear` column. Therefore, little information about the compare and time series factor is carried out into our model. 
+
+Hence, we would like to perform some post-processing to incorporate more time-series related information into our prediction
+
+From the business perspective, our group hypothesize that company that have major Accounting Error in the previous year are likely to have accounting error in the future. Specifically in this data, we observe that 2010 is right during recession period, hence company that previously have intentional accounting error (indication of weak company performance), is likely to have accounting mistatement again. Therefore, for those companies, we will boost the probability by 0.6 and cap at 1. The reason of choosing `0.6` is purely by trial and error but we also think that it should not influence too much on the probability
+
+After running the post-processing code above, the AUC score improved for most of the models as outlined in the summary below: 
+
++-----------------------+------------------------+-----------------------+
+| Method                | Before Post-Processing | After Post-Processing |
+:+=====================:+:======================:+:=====================:+
+| Logistics Regression  | 			 | 0.68785               |
++-----------------------+------------------------+-----------------------+
+| Elastic Net           | 		         | 0.67173	         |
++-----------------------+------------------------+-----------------------+
+| RandomForest	 	| 			 | 	                 |
++-----------------------+------------------------+-----------------------+
+| LightGBM              | 		         | 		         |
++-----------------------+------------------------+-----------------------+
+| Simple Neural Network | 		         | 		         |
++-----------------------+------------------------+-----------------------+
+	
 ## Discussion
 
-There are a few factors that we want to discuss in choosing our final model: metric performance, complexity , model explainability and interpretability. To enable easier comparison, the summary of results table after post-processing are given below:
-
-+-----------------------+-------------------+
-| Method                | Out-of-sample AUC |
-:+=====================:+:=================:+
-| Logistics Regression  | 0.68785	    |
-+-----------------------+-------------------+
-| Elastic Net           | 0.67173	    |
-+-----------------------+-------------------+
-| LightGBM              | 0.63151	    |
-+-----------------------+-------------------+
-| RandomForest	        | 		    |
-+-----------------------+-------------------+
-| Simple Neural Network | 		    |
-+-----------------------+-------------------+
+There are a few factors that we want to discuss in choosing our final model: metric performance, complexity , model explainability and interpretability.
 
 ### Metrics
 
@@ -791,7 +786,6 @@ Hence, Our group would like to suggest LightGBM for lower complexity
 As a data analyst/ data scientist, we often have to explain our model to non-technical people . Hence, a deep learning model or lightgbm model is no more than a black box to the upper management . Therefore, in this case, **Logistic Regression** seem like a more reasonable choice. LASSO would also be a good option with good regularization factor 
 
 Overall, we would like to use LightGBM because its not computational cost is much lesser than Deep learning model while it is also easy to understand and explain in a more layman term to non-technical people . Such explanation could be found in this [page](https://xgboost.readthedocs.io/en/latest/tutorials/model.html) by Tianqi Chen, the author of XGBoost
-
 
 # References
 http://www.theforensicauditor.com/2017/10/02/financial-statement-fraud/  
