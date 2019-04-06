@@ -416,6 +416,93 @@ Comparing the 3 methods, we found the Out-of-sample AUC scores as follows:
 
 Based on the above, we can conclude that out of the 3 glmnet methods, Elastic Net gives the best out-of-sample AUC score.
 
+## Random Forest
+The random forest algorithm is an ensemble learning method which combines multiple classification or regression (prediction) decision tree models into one algorithm. Despite losing the readability of the rules which the decision trees models offer, the random forest corrects the habitual overfitting of the training set. Below is our run of the random forest model: 
+```{r}
+randf <- randomForest(as.factor(Restate_Int)~.,
+                      data = train,
+                      ntree = 500,
+                      mtry = 4,
+                      nodesize = 5,
+                      importance = TRUE)
+randf.pred.prob <- predict(randf, test, type = "prob")
+```
+Using the random forest algorithm and the same training data with the 15 identified features mentioned above, we produced an out-of-sample AUC of **0.56741**. An advantage of using the random forest algorithm is that it can be easily tuned, and there are many tuning options, such as adjusting the number of trees (ntree), the mtry, and the nodesize. We used the caret package, which has functions that help to automate the tuning based on the best performance. Below is the code used for the tuning process.
+
+```{r}
+tunegrid <- expand.grid(.mtry=c(1:15))
+control <- trainControl(method="repeatedcv", number=10, repeats=1, search="grid")
+randf_gridsearch <- train(as.factor(Restate_Int)~.,
+                          data = train, 
+                          method = "rf",
+                          tuneGrid = tunegrid,
+                          trControl = control)
+print(randf_gridsearch)
+plot(randf_gridsearch)
+```
+The following was printed:
+Random Forest 
+
+15213 samples
+   15 predictor
+    2 classes: '0', '1' 
+
+No pre-processing
+Resampling: Cross-Validated (10 fold, repeated 1 times) 
+Summary of sample sizes: 13692, 13692, 13692, 13691, 13692, 13692, ... 
+Resampling results across tuning parameters:
+
+  mtry  Accuracy   Kappa        
+   1    0.9760732  -0.0001281119
+   2    0.9760732  -0.0001281119
+   3    0.9759417  -0.0003843169
+   4    0.9759417  -0.0003843169
+   5    0.9759417  -0.0003843169
+   6    0.9760075   0.0048999105
+   7    0.9760075   0.0047703232
+   8    0.9758760  -0.0005124194
+   9    0.9758760   0.0045141183
+  10    0.9758102   0.0094313972
+  11    0.9758102   0.0043924549
+  12    0.9756788   0.0040192885
+  13    0.9757445   0.0139597800
+  14    0.9747585   0.0210385664
+  15    0.9747586   0.0255406770
+
+Accuracy was used to select the optimal model using the largest value. 
+The final value used for the model was mtry = 1.
+
+The following plot was made: **Insert plot here**
+
+As can be seen from the plot, the difference in the accuracy between the various mtry attempts is small. Thus, we hypothesise that the accuracy of the produced model will not improve greatly. We then proceeded to change the mtry to 1 based on the grid suggestion.
+
+```{r}
+randf.tuned <- randomForest(as.factor(Restate_Int)~.,
+                      data = train,
+                      ntree = 500,
+                      mtry = 1,
+                      nodesize = 5,
+                      importance = TRUE)
+randf.tuned.pred.prob <- predict(randf, test, type = "prob")
+```
+Changing the random forest algorithm and the same training data with the 15 identified features mentioned above, we produced an out-of-sample AUC of **0.58123**. As predicted, the tuning only improved the performance of the model slightly. We then proceeded to post-process the on the existing tuned random forest model.
+
+```{r}
+testsub = read.csv("test.csv")
+testsub1 = cbind(testsub, Restate_Int = randf.tuned.pred.prob[,2])
+testsub1 = testsub1[,c(1,16)]
+colnames(testsub1)[2] = "Restate_Int"
+
+Restate_List = unique(subset(train, train$Restate_Int == 1)[,1])
+post_processing = function(x){
+  ifelse(x %in% Restate_List,0.6,0)}
+
+testsub1['boosting'] = lapply(testsub1['gvkey'],post_processing)
+testsub1['Restate_Int'] = testsub1['Restate_Int'] + testsub1['boosting']
+testsub1$Restate_Int = ifelse(testsub1$Restate_Int > 1,1,testsub1$Restate_Int)
+```
+From the post-processing conducted, we produced an out-of-sample AUC of **0.58514**. As such, we can conclude that the post-processing did not improve the performance of the model very greatly. We believe that the random forest algorithm already takes into account similar post-processing steps, therefore, the model does not improve the out-of-sample AUC greatly.
+
 ## LightGBM
 
 Besides traditional statistical methods, our group would like to try state-of-the-art machine learning technique. Hence, our group would like to try LightGBM.
