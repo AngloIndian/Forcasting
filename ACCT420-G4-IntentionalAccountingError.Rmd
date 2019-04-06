@@ -152,7 +152,7 @@ Shares represent how profitable a company is. As a company becomes more profitab
 
 ## Ratios
 
-Ratios are indicators of a company's health and may be manipulated to deceive users of financial statements such as creditors and investors. Alternatively, unusual values for certain ratios may be a sign that some underlying manipulation is taking place.
+Ratios and indexes are indicators of a company's health and may be manipulated to deceive users of financial statements such as creditors and investors. Alternatively, unusual values for certain ratios and indexes may be a sign that some underlying manipulation is taking place.
 
 +----------------------------+--------------------+---------------------+
 | Ratio Name                 |     Ratio Code     |       Formula       |
@@ -164,9 +164,7 @@ Ratios are indicators of a company's health and may be manipulated to deceive us
 | Staff Administration Index |   saleadmin_index  |     $$xlr/revt$$    |
 +----------------------------+--------------------+---------------------+
 
-Liquidity ratios measure the ability of a company to meet its short-term financial obligations, while leverage ratios deal more with long-term obligations and provide a measure of the degree of risk taken on by the company. The lower the liquidity/leverage ratios, the higher the pressure on the company to misstate financial statements so as to avoid going into default or be faced with stricter covenants or penalties.  
-
-These ratios analyse the efficiency of a company. They can reveal how fast the company is able to turn assets into cash. If a company is not using its resources well (e.g. not fully utilising its available assets to generate sales), it may manipulate its financial misstatements to look more favourable or appear to be profitable. Such ratios may also provide evidence that the accounts involved have been manipulated.
+Significant decrease in Leverage Index can be connected with understatement of liabilities and expenses. On the other hand, a high level of Leverage Index also indicates the high number of creditors, increasing the incentives for fraud. As for Deprecian Index, a decrease in depreciation may give rise to the possibility of company's attempts to fraudulently revise the useful life of depreciated assets or the depreciation method. This may result in exaggerated profits in the income statement of the company. Similar to the Leverage Index, Staff Admin Index may also indicate an understatement of liabilities, sales general expenses and administrative costs. Negative changes in this index may also be caused by revenue falsification.
 
 # Exploratory Data Analysis
 
